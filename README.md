@@ -1,5 +1,7 @@
 
-[[https://scontent-nrt1-1.xx.fbcdn.net/t31.0-8/12698471_962910583792447_5325853412949057366_o.jpg|alt=rainy]]
+![Preview](https://scontent-nrt1-1.xx.fbcdn.net/t31.0-8/12698471_962910583792447_5325853412949057366_o.jpg "Editing..")
 
+```bash
 >> sady track -> to enjoy (๑˃̵ᴗ˂̵) 
+```
 
