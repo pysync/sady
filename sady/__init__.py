@@ -33,6 +33,9 @@ class Player(cmd.Cmd):
     """
     Simple Player
     """
+    prompt = 'mbox>'
+    intro = '---------------------------\nrelax with soundclound\n'
+
     def __init__(self):
         cmd.Cmd.__init__(self)
 
@@ -41,6 +44,7 @@ class Player(cmd.Cmd):
 
     """ search in sound clound and play """
     def do_p(self, name):
+        "search and play track by every thing input(ex: p let's it go)"
         if not name:
             name = self.random_track()
 

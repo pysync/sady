@@ -4,5 +4,14 @@ import click
 from sady import Player
 
 @click.command()
-def start():
-    Player().cmdloop()
+@click.option('--query', '-q',
+              multiple=True,
+              default=[],
+              help='track keywords')
+def start(query):
+    if len(query):
+        cmd = 'p %s' % ' '.join(query)
+        Player().onecmd(cmd)
+        Player().cmdloop()
+    else:
+        Player().cmdloop()
