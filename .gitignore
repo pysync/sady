@@ -1,3 +1,6 @@
 env/
 *.m3u
 *.egg-info
+.eggs
+build
+dist

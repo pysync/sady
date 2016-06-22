@@ -1,5 +1,6 @@
-# player
-import click
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 import soundcloud
 import tempfile
 import os
@@ -97,9 +98,6 @@ class Player(cmd.Cmd):
     def random_track(self):
         return random.choice(TRACK_NAMES)
 
-@click.command()
-def cli():
-    Player().cmdloop()
 
 
 # lib ref

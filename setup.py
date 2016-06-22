@@ -1,14 +1,31 @@
-# setup.py
-from setuptools import setup
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 
+from setuptools import setup, find_packages
+
+# enjoy commandline use for search and play
+# any music available in soundclound
 setup(
-    name='sad sound app',
+    name='sady',
     version='1.0',
-    py_modules=['player'],
-    install_requires=['Click',
-      'soundcloud'],
-    entry_points='''
-    [console_scripts]
-    sady=player:cli
-    '''
+    author='Dung Nguyen Tri',
+    author_email='dungntnew@gmail.com',
+    description=(u'A cmd soundclound player (๑˃̵ᴗ˂̵)'),
+    license ='MIT',
+    keywords='cmd, terminal, soundclound, music, player',
+    url='https://github.com/dungntnew/sady',
+    long_description='',
+    classifiers=[
+      'Development Status :: 3 - Alpha',
+      'Topic :: Multimedia :: Sound/Audio :: Players',
+    ],
+    packages=find_packages(),
+    include_package_data = True,
+    test_suite='tests',
+    install_requires=['Click', 'soundcloud'],
+    entry_points={
+      'console_scripts': [
+         'sady = sady.cli:start'
+      ]
+    }
 )
