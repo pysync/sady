@@ -3,6 +3,9 @@
 
 from setuptools import setup, find_packages
 
+with open('requirements.txt') as f:
+  requirements = f.read().splitlines()
+
 # enjoy commandline use for search and play
 # any music available in soundclound
 setup(
@@ -22,7 +25,7 @@ setup(
     packages=find_packages(),
     include_package_data = True,
     test_suite='tests',
-    install_requires=['Click', 'soundcloud'],
+    install_requires=requirements,
     entry_points={
       'console_scripts': [
          'sady = sady.cli:start'

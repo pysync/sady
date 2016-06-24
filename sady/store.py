@@ -4,9 +4,10 @@
 import tempfile
 import os
 import requests
+from sady import config
+
 
 class History(object):
-
     """ data length """
     MAX_SIZE = 100
 
@@ -33,64 +34,39 @@ class History(object):
     def size(self):
         return len(self.data)
 
-class PlayList(object):
 
-    PLAYLIST_SIZE = 100
+class PlayList(object):
     CHUNK_SIZE = 512 * 1024
-    PLAYLIST_FILE = 'playlist.m3u'
-    TRACK_URL_FILE = 'urls.txt'
-    DATA_DIR_PREX = 'sady'
 
     def __init__(self):
-        self.__init_store()
+        self.track_data = {}
         self.load_track_data()
 
-
     def load_track_data(self):
-        self.track_data = {}
-        with open(self.trackurls_path, 'r') as f:
+
+        with open(config.TRACK_DATA_FILE, 'r') as f:
             for line in f:
-                (track_id, filepath) = line.strip('\n\r').split('\t')
-                self.track_data[track_id] = filepath
+                (track_id, file_path) = line.strip('\n\r').split('\t')
+                self.track_data[track_id] = file_path
 
     def get(self, track_id):
         return self.track_data.get(str(track_id), None)
 
     def write(self, track_id, url):
-        filepath = self.__download(url)
-        with open(self.playlist_path, 'a') as f:
-            f.write('%s\n' % filepath)
+        file_path = self.__download(url)
+        with open(config.PLAYLIST_FILE, 'a') as f:
+            f.write('%s\n' % file_path)
 
-        with open(self.trackurls_path, 'a') as f:
-            f.write('%s\t%s\n' % (track_id, filepath))
+        with open(config.TRACK_DATA_FILE, 'a') as f:
+            f.write('%s\t%s\n' % (track_id, file_path))
 
-        self.track_data[str(track_id)] = filepath
-        return filepath
-
-    def __init_store(self):
-        user_dir = os.path.expanduser('~')
-        if not user_dir:
-            user_dir = '/var/tmp'
-        self.data_path = os.path.join(user_dir, self.DATA_DIR_PREX)
-
-        if not os.path.exists(self.data_path):
-            os.makedirs(self.data_path)
-
-        self.playlist_path = os.path.join(self.data_path, self.PLAYLIST_FILE)
-        self.trackurls_path = os.path.join(self.data_path, self.TRACK_URL_FILE)
-
-        if not os.path.exists(self.playlist_path):
-            with open(self.playlist_path, 'a') as f:
-                os.utime(self.playlist_path, None)
-
-        if not os.path.exists(self.trackurls_path):
-            with open(self.trackurls_path, 'a') as f:
-                os.utime(self.trackurls_path, None)
+        self.track_data[str(track_id)] = file_path
+        return file_path
 
     def __download(self, url):
         request = requests.get(url)
 
-        (fd, filename) = tempfile.mkstemp(prefix='track', dir=self.data_path)
+        (fd, filename) = tempfile.mkstemp(prefix='track_', dir=config.TRACK_DIR)
         try:
             tfile = os.fdopen(fd, 'wb')
             for chunk in request.iter_content(self.CHUNK_SIZE):
@@ -101,11 +77,9 @@ class PlayList(object):
             print 'write done: %s' % filename
         return filename
 
-    def __clean():
-        with open(self.playlist_path, 'r') as f:
-            track_names = f.readlines()
-            for track_name in track_names:
+    def __clean(self):
+        with open(config.PLAYLIST_FILE, 'r') as f:
+            track_file_paths = f.readlines()
+            for track_name in track_file_paths:
                 os.remove(track_name)
-        os.remove(self.playlist_path)
-
-
+        os.remove(config.PLAYLIST_FILE)

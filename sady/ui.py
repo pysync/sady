@@ -8,6 +8,7 @@ HEADER_RULER = '-' * 15
 
 STORE_HEADERS = ('#id', '#path')
 
+
 def show_tracks(tracks):
     data = [(index,
              track.id,
@@ -21,6 +22,7 @@ def show_files(files):
     data = [(track_id, path)
             for (track_id, path) in files.items()]
     print tabulate(data, headers=STORE_HEADERS)
+
 
 def show_msg(msg):
     padding = (len(HEADER_RULER) - len(msg)) / 2 - 1

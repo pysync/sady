@@ -5,3 +5,5 @@ env/
 build
 dist
 *.pyc
+.idea
+.out
