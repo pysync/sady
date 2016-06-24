@@ -2,3 +2,4 @@ six
 soundcloud
 click
 tabulate
+jsonpickle
