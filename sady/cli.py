@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 import click
-from sady import Player
+from sady import PlayerCMD
+
 
 @click.command()
 @click.option('--query', '-q',
@@ -11,7 +12,8 @@ from sady import Player
 def start(query):
     if len(query):
         cmd = 'p %s' % ' '.join(query)
-        Player().onecmd(cmd)
-        Player().cmdloop()
+        player = PlayerCMD()
+        player.onecmd(cmd)
+        player.cmdloop()
     else:
-        Player().cmdloop()
+        PlayerCMD().cmdloop()

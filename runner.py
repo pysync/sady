@@ -1,58 +1,40 @@
-import logging
-import json
-import random
-import jsonpickle
-
-logger = logging.getLogger(__name__)
-
-logger.info('-- app starting...')
+import threading
+import multiprocessing as mp
+import time
+from sady.gateway import Worker
 
 
-class Track:
-    fields = ('id', 'title', 'playback_count', 'genre')
+def foo_pool(x):
+    time.sleep(2)
+    print "go"
+    return x * x
 
-    def __init__(self, *argv, **kwargs):
-        if argv and len(argv):
-            obj = argv[0]
-            if not isinstance(obj, Track):
-                raise ValueError('cannot instance Track with: %s' % obj.__class__)
 
-            for field in self.fields:
-                if hasattr(obj, field):
-                    val = getattr(obj, field)
-                    setattr(self, field, val)
-        else:
-            if kwargs:
-                for k, v in kwargs.items():
-                    if k in self.fields:
-                        setattr(self, k, v)
+result_list = []
 
-    def to_json(self):
-        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
-class TrackList(object):
+def log_result(result):
+    # This is called whenever foo_pool(i) returns a result.
+    # result_list is modified only by the main process, not the pool workers.
+    # result_list.append(result)
+    print result
 
-    def __init__(self):
-        self.tracks = []
 
-tracks = []
-for i in range(0, 10, 1):
-    track = Track(
-        id=str(i),
-        title='track: %s' % i,
-        playback_count=random.choice(range(100, 10000)),
-        genre=random.choice(('POP', 'KPOP', 'VPOP'))
-    )
-    tracks.append(track)
+def apply_async_with_callback():
+    pool = mp.Pool()
+    for i in range(2):
+        pool.apply_async(foo_pool, args=(i,), callback=log_result)
+    pool.close()
+    pool.join()
+    print(result_list)
 
-print 'writing...'
-with open('track.json', 'w') as f:
-    f.write(jsonpickle.encode(tracks))
 
-print 'reading...'
-with open('track.json', 'r') as f:
-    load_tracks = jsonpickle.decode(f.read())
-    print load_tracks
+def done(tid, tgroup, *args):
+    print "DONE"
 
-    for t in load_tracks:
-        print t.title
+if __name__ == '__main__':
+    print "crate worker"
+    w = Worker(1, "--", apply_async_with_callback, done)
+    w.start()
+    print "done__"
+
