@@ -13,7 +13,7 @@ class UI(object):
     def show_files(self, files):
         data = [(track_id, path)
                 for (track_id, path) in files.items()]
-        print tabulate(data, headers=STORE_HEADERS)
+        print(tabulate(tabular_data=data, headers=STORE_HEADERS))
 
     def show_tracks(self, tracks):
         data = [(index,
@@ -23,12 +23,12 @@ class UI(object):
                  track.genre,
                  track.synced or 'False'
                  ) for (index, track) in enumerate(tracks)]
-        print tabulate(data, headers=TRACK_HEADERS)
+        print(tabulate(data, headers=TRACK_HEADERS))
 
     def show_wait(self, message='loading..'):
         self.show_message(message)
 
     def show_message(self, msg):
-        padding = (len(HEADER_RULER) - len(msg)) / 2 - 1
-        formatted_msg = '%s %s %s' % ('-' * padding, msg, '-' * padding)
-        print formatted_msg
+        padding = int((len(HEADER_RULER) - len(msg)) / 2 - 1)
+        formatted_msg = '{0} {1} {2}'.format('-' * padding, msg, '-' * padding)
+        print(formatted_msg)

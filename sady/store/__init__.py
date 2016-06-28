@@ -20,7 +20,7 @@ class Track(object):
         if argv and len(argv):
             obj = argv[0]
             if not isinstance(obj, Track):
-                raise ValueError('cannot instance with: %s' % obj.__class__)
+                raise ValueError('cannot instance with: {}'.format(obj.__class__))
 
             for field in self.fields:
                 if hasattr(obj, field):
@@ -99,10 +99,6 @@ class TrackList(object):
             with open(self.playlist_uri, 'a') as playlist_file:
                 playlist_file.write('\n'.join(local_uris))
 
-    def flush(self):
-        self.__save_to_disk()
-        self.__write_to_playlist_file()
-
     def __clean(self):
         with open(self.playlist_uri, 'r') as f:
             track_file_paths = f.readlines()
@@ -132,7 +128,7 @@ class TrackList(object):
 
     def add(self, track, flush=True):
         if not isinstance(track, Track):
-            raise ValueError('cannot add a %s to track list' % track.__class__)
+            raise ValueError('cannot add a {0} to track list'.format(track.__class__))
 
         if not self.exists(track.get_track_id()):
             self.tracks.append(track)
@@ -155,10 +151,9 @@ class TrackList(object):
                 self.__save_to_disk()
                 self.__write_to_playlist_file()
 
+    def flush(self):
+        self.__save_to_disk()
+        self.__write_to_playlist_file()
+
     def top_tracks(self, size=20):
         return self.tracks[:size]
-
-    def __repr__(self):
-        return 'data_uri: %s\n' \
-               'playlist_uri: %s\n' \
-               'track count: %s\n' % (self.data_uri, self.playlist_uri, len(self.tracks))

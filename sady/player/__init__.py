@@ -1,6 +1,5 @@
 import logging
 
-import time
 from sady import store
 from sady.ui import UI
 from sady import gateway
@@ -17,82 +16,32 @@ class MPlayer(object):
     MAX_SEARCH_TASK = 1
 
     def __init__(self):
-        self.workers = []
         self.ui = UI()
-        self.downloader = gateway.Downloader(self.__all_track_synced_handler)
         self.tracks_list = store.TrackList(config.TRACK_DATA_FILE, config.PLAYLIST_FILE)
-        self.history_list = store.TrackList(config.SEARCH_HISTORY_FILE, config.HISTORY_PLAYLIST_FILE)
-        self.__tracks__ = []
         self.playlist_uri = self.tracks_list.playlist_uri
-
-    def _next_worker_id(self):
-        return len(self.workers)
-
-    def _wait_workers(self, group):
-        return [worker for worker in self.workers if worker.thread_group == group]
-
-    def _worker_finish_handler(self, worker_id, group_name):
-        self.workers = [worker for worker in self.workers if worker.thread_id != worker_id
-                        and worker.thread_group != group_name]
-
-    def search_handler(self, worker_id, group_name, result):
-        self._worker_finish_handler(worker_id, group_name)
-        self.__tracks__ = result
-        if self.__tracks__:
-            for track in self.__tracks__:
-                if self.tracks_list.exists(track.get_track_id):
-                    track.update(synced=True)
-            self.history_list.add_all(self.__tracks__)
-
-    def show_search_result(self):
-        logger.info("tracks: %s" % self.history_list.tracks)
-        self.ui.show_tracks(self.__tracks__)
-
-    def show_history(self):
-        self.__tracks__ = self.history_list.top_tracks(50)
-        self.playlist_uri = self.history_list.playlist_uri
-        self.ui.show_tracks(self.__tracks__)
-
-    def show_synced(self):
-        self.__tracks__ = self.tracks_list.top_tracks(50)
-        self.playlist_uri = self.tracks_list.playlist_uri
-        self.ui.show_tracks(self.__tracks__)
+        self.search_result = []
 
     def search(self, q, start=False):
-        self.ui.show_wait()
-
-        """wait other finish"""
-        while len(self._wait_workers('search')) > self.MAX_SEARCH_TASK:
-            time.sleep(1)
-
-        worker = gateway.Worker(self._next_worker_id(),
-                                self.TASK_SEARCH,
-                                gateway.search,
-                                self.search_handler,
-                                q)
-
-        self.workers.append(worker)
-        worker.start()
-
-        """wait for search"""
+        """ search track online by query"""
         self.ui.show_wait("searching..")
-        while worker.isAlive():
-            time.sleep(1)
-        self.show_search_result()
+        result = gateway.search(query=q)
+        if not result:
+            self.ui.show_message("not found track with query=%s" % q)
+        else:
+            self.search_result = result
+            for result in self.search_result:
+                track = self.tracks_list.track_by_id(result.get_track_id())
+                if track:
+                    result.update(synced=True, local_uri=track.local_uri)
+        self.ui.show_tracks(self.search_result)
+        if start:
+            self.__select_one(self.search_result, 0)
 
-        if self.__tracks__ and start:
-            self.start_playlist()
-
-    def __track_synced_handler(self, track):
-        """ handle on synced event"""
-        self.show_search_result()
-        self.play(track)
-
-    def __all_track_synced_handler(self):
-        """ handle on all track synced event """
-        self.ui.show_message("all track synced -- refresh ui")
-        self.history_list.flush()
-        self.tracks_list.flush()
+    def search_history(self):
+        if not self.search_result:
+            self.ui.show_message("history empty")
+        else:
+            self.ui.show_tracks(self.search_result)
 
     def play(self, track):
         """ start play a track """
@@ -112,70 +61,49 @@ class MPlayer(object):
                          '-vo',
                          'null',
                          '-playlist',
-                         self.playlist_uri,
+                         self.tracks_list.playlist_uri,
                          '-shuffle']
                         )
         self.ui.show_message('end playlist')
 
-    def select_track(self, index):
+    def __select_one(self, current_list, index):
+        """select one track in list by index and play
+        if track not in track list - add track to track list
+        if track not sync yet - sync track
+        """
+
         try:
             index = int(index)
-        except Exception as e:
-            self.ui.show_message("invalid select")
+        except ValueError as e:
+            self.ui.show_message("invalid index")
             return
-
-        if not self.__validate_select(index):
+        if not self.__validate_select(current_list, index):
             return
+        track = current_list[index]
+        self.tracks_list.add(track, True)
 
-        track = self.__tracks__[index]
-
-        if not track.synced:
-            """ track not synced yet"""
-            self.ui.show_wait('syncing..')
-            tasks = [gateway.DownloadTask(track, self.__track_synced_handler)]
-            self.downloader.add_tasks(tasks)
-        else:
+        if track.synced and track.local_uri:
             self.play(track)
-
-    def sync_all(self):
-        self.ui.show_message("syncing..")
-        tasks = [gateway.DownloadTask(track, None) for track in self.__tracks__]
-        self.downloader.add_tasks(tasks)
-
-    def sync(self, index):
-        if not self.__validate_select(index):
-            return
-
-        track = self.__tracks__[index]
-
-        if not track.synced:
+        else:
             """ track not synced yet"""
             self.ui.show_wait('syncing..')
-            tasks = [gateway.DownloadTask(track, self.__track_synced_handler)]
-            self.downloader.add_tasks(tasks)
-        else:
-            """ track already synced"""
-            self.ui.show_message("track synced")
+            gateway.download([track],
+                             lambda t, u: self.__synced_handler(t, u, current_list, True), None)
 
-    def __validate_select(self, index):
-        if not self.__tracks__:
+    def __synced_handler(self, track, url, current_list, start=False):
+        """ update track after sync"""
+        self.tracks_list.update(track.get_track_id(), True, synced=True, local_uri=url)
+        self.ui.show_tracks(current_list)
+        if start:
+            self.play(self.tracks_list.track_by_id(track.get_track_id()))
+
+    def __validate_select(self, track_list, index):
+        if not track_list:
             """ track list is empty """
             self.ui.show_message("track list is empty")
             return False
-        if index < 0 or index >= len(self.__tracks__):
+        if index < 0 or index >= len(track_list):
             """ invalid selection """
-            self.ui.show_message("invalid, expect index in: [%s -> %s]" % (0, len(self.__tracks__)))
+            self.ui.show_message("invalid, expect index in: [%s -> %s]" % (0, len(track_list)))
             return False
         return True
-
-
-if __name__ == '__main__':
-    player = MPlayer()
-
-    # for q in ('goi mua', 'westlife', 'tuan hung'):
-    #     player.search(q)
-
-    player.show_history()
-    player.sync_all()
-    player.sync(1)
-    logger.info('MAIN END')
