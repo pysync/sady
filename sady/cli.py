@@ -88,6 +88,23 @@ class PlayerCMD(cmd.Cmd):
         else:
             pass
 
+    def do_sync(self, indices):
+        """sync tracks by index list, ex: sync 10 or sync 1 2 3 or sync 1,2,3"""
+
+        indices = indices.strip()
+        if not indices:
+            self.player.sync()
+            return
+
+        if ',' in indices:
+            indices = [index.strip() for index in indices.split(',')]
+        elif ' ' in indices:
+            indices = [index.strip() for index in indices.split(' ')]
+        else:
+            indices = [indices]
+
+        self.player.sync(indices)
+
 
 @click.command()
 @click.option('--query', '-q',

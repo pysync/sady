@@ -150,6 +150,38 @@ class MPlayer(object):
         else:
             self.__select_one(self.search_result, index)
 
+    def sync(self, indices=None):
+        """sync result of search by indices
+        """
+        track_list = self.search_result
+        if not track_list:
+            self.ui.show_message('empty list')
+            return
+
+        if not indices:
+            valid_indices = range(0, len(track_list))
+        else:
+            valid, err, valid_indices = self.__validate_indices(track_list, indices)
+            if not valid:
+                self.ui.show_message(err)
+                return
+
+        def __update_func(future):
+            track, local_uri = future.result()
+            if not local_uri:
+                self.ui.show_message("sync [{0}]{1} failed.".format(track.id, track.title))
+            else:
+                self.tracks_list.update(track.get_track_id(), True, synced=True, local_uri=local_uri)
+                track.update(local_uri=local_uri, synced=True)
+                self.ui.show_message("synced [{0}]{1} -> {2}".format(track.id, track.title, local_uri))
+
+        tracks = [self.search_result[i] for i in valid_indices]
+        self.tracks_list.add_all(track_list, True)
+        self.ui.show_message('syncing..')
+        self.loop.run_until_complete(self.gw.downloads(tracks, __update_func, None))
+        self.ui.show_tracks(track_list)
+        self.ui.show_message('synced done.')
+
     def __select_one(self, current_list, index):
         """select one track in list by index and play
         if track not in track list - add track to track list
@@ -198,3 +230,22 @@ class MPlayer(object):
             self.ui.show_message("invalid, expect index in: [%s -> %s]" % (0, len(track_list)))
             return False
         return True
+
+    @classmethod
+    def __validate_indices(cls, track_list, indices):
+        valid_indices = []
+        length = len(track_list)
+        error = None
+        for i in indices:
+            if not i.isdigit():
+                error = "in valid select for index: {0}, index must be digit".format(i)
+                return False, error, valid_indices
+            else:
+
+                index = int(i)
+                if index < 0 or index >= length:
+                    error = "invalid index {0}, expect index must in: [{0} -> {1}]".format(index, 0, length)
+                    return False, error, valid_indices
+                else:
+                    valid_indices.append(index)
+        return True, error, valid_indices
