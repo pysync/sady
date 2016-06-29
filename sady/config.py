@@ -33,5 +33,8 @@ for file_path in (LOG_FILE,
 """ search result limit """
 SEARCH_RESULT_LIMIT = 20
 
+""" track page size """
+PAGE_SIZE = 20
+
 """ client id """
 CLIENT_ID = 'eca1790e16470735633dd7ee79dd6074'

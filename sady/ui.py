@@ -15,8 +15,8 @@ class UI(object):
                 for (track_id, path) in files.items()]
         print(tabulate(tabular_data=data, headers=STORE_HEADERS))
 
-    def show_tracks(self, tracks):
-        data = [(index,
+    def show_tracks(self, tracks, offset=0):
+        data = [(index + offset,
                  track.id,
                  track.title,
                  track.playback_count,

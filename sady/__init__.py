@@ -1,7 +1,16 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+from time import time
+from functools import wraps
 
-from multiprocessing import Pool as ThreadPool
 
-MAX_THREADS = 4
-thread_pool = ThreadPool(MAX_THREADS)
+def log_execution_time(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time()
+        return_value = func(*args, **kwargs)
+        message = 'Executing {} took {:.03} seconds.'.format(func.__name__, time() - start)
+        print(message)
+        return return_value
+
+    return wrapper

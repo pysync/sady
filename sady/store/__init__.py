@@ -11,7 +11,9 @@ class Track(object):
               'synced',  # where track downloaded
               'local_uri',  # path to local track file (None if not synced)
               'stream_url',  # sound cloud stream url
+              'streamable',  # where can stream
               'download_url',  # sound cloud download url
+              'downloadable',  # where can download
               )
 
     def __init__(self, *argv, **kwargs):
@@ -39,6 +41,18 @@ class Track(object):
     def get_track_id(self):
         return getattr(self, 'id', None)
 
+    def get_local_uri(self):
+        return getattr(self, 'local_uri', None)
+
+    def is_streamable(self):
+        return getattr(self, 'streamable', False)
+
+    def is_downloadable(self):
+        return getattr(self, 'downloadable', False)
+
+    def is_playable(self):
+        return self.get_local_uri() or self.is_streamable() or self.is_downloadable()
+
     def update(self, **kwargs):
         """
         :param kwargs: dict of attr
@@ -57,15 +71,17 @@ class Track(object):
 
 
 class TrackList(object):
-    def __init__(self, data_uri, playlist_uri):
+    def __init__(self, page_size, data_uri, playlist_uri):
         """
         load list of track from local file by data_url
         :param data_uri: path to data file (use jsonpickle format)
         :param playlist_uri: path to playlist file(raw text format)
         """
+        self.page_size = page_size
         self.data_uri = data_uri
         self.playlist_uri = playlist_uri
         self.tracks = []
+        self.__ptr = (0, self.page_size)
         self.__load_from_disk()
 
     def __load_from_disk(self):
@@ -155,5 +171,23 @@ class TrackList(object):
         self.__save_to_disk()
         self.__write_to_playlist_file()
 
-    def top_tracks(self, size=20):
-        return self.tracks[:size]
+    def top_tracks(self):
+        self.__ptr = (0, min(self.page_size, len(self.tracks)))
+        return self.tracks[:self.__ptr[1]]
+
+    def curr_page(self):
+        return self.__ptr[0], self.tracks[self.__ptr[0]: self.__ptr[1]]
+
+    def next_page(self):
+        self.__ptr = (self.__ptr[1], min(self.__ptr[1] + self.page_size, len(self.tracks)))
+        return self.__ptr[0], self.tracks[self.__ptr[0]: self.__ptr[1]]
+
+    def prev_page(self):
+        self.__ptr = (max(0, self.__ptr[0] - self.page_size), self.__ptr[0])
+        return self.__ptr[0], self.tracks[self.__ptr[0]: self.__ptr[1]]
+
+    def clean(self):
+        try:
+            self.__clean()
+        except IOError as e:
+            pass

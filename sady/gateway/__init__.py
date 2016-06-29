@@ -5,95 +5,96 @@ import tempfile
 import os
 from sady.store import Track
 from sady import config
-from sady import thread_pool
+import asyncio
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 CHUNK_SIZE = 512 * 1024
 
-client = soundcloud.Client(client_id=config.CLIENT_ID)
 
+class Gateway(object):
+    def __init__(self, loop):
+        self.client = soundcloud.Client(client_id=config.CLIENT_ID)
+        self.loop = loop
 
-def search(query):
-    """
-    search by query string via sound cloud service
-    :param query:
-    :return: list of track
-    """
-    logger.info('>> search track with q={0}'.format(query))
-    resources = client.get('/tracks', q=query, limit=config.SEARCH_RESULT_LIMIT)
-    tracks = __to_tracks(resources)
-    logger.info('>> result count {0}'.format(len(tracks)))
-    return tracks
+    async def search(self, query, callback=None):
+        """
+        search by query string via sound cloud service
+        :param query:
+        :param callback:
+        :return: list of track
+        """
 
+        def sync_search(q):
+            resources = self.client.get('/tracks', q=q, limit=config.SEARCH_RESULT_LIMIT)
+            return self.__to_tracks(resources)
 
-def __download(args):
-    """
-    download track by stream url or download url
-    :param track:
-    :param handler:
-    :return: saved file path
-    """
-    print ("it's work")
-    return 1
-    # track, handler = args
-    # print "start downloading.........."
-    # download_url = track.download_url or __extract_stream_url(track)
-    #
-    # request = requests.get(download_url)
-    #
-    # (fd, filename) = tempfile.mkstemp(prefix='track_', dir=config.TRACK_DIR)
-    # try:
-    #     fh = os.fdopen(fd, 'wb')
-    #     for chunk in request.iter_content(CHUNK_SIZE):
-    #         if chunk:
-    #             fh.write(chunk)
-    #     fh.close()
-    # except IOError as e:
-    #     logger.error('failed for download %s' % e)
-    #
-    # if handler:
-    #     print "----search end---"
-    #     #handler(track=track, local_uri=filename)
+        future = self.loop.run_in_executor(None, sync_search, query)
+        if callback:
+            future.add_done_callback(callback)
+        return await future
 
-    # return filename
+    async def download(self, track, callback=None):
+        """
+        download content from track stream uri or track download url and write to file
+        :param track:
+        :param callback: (track, local_uri)
+        :return: saved local uri
+        """
 
+        def sync_write(content):
+            (fd, filename) = tempfile.mkstemp(prefix='track_', dir=config.TRACK_DIR)
+            try:
+                fh = os.fdopen(fd, 'wb')
+                for chunk in content.iter_content(CHUNK_SIZE):
+                    if chunk:
+                        fh.write(chunk)
+                fh.close()
+            except IOError as e:
+                logger.error('failed for download {0}'.format(e))
+            return filename
 
-def download(tracks, update_func, finish_func):
-    tasks = [(track, update_func) for track in tracks]
-    tasks = [(Track(), update_func) for _ in range(0, 2)]
-    thread_pool.map(__download, tasks)
+        def sync_download():
+            if not track.is_downloadable() and not track.is_streamable():
+                logger.warn('track: {0} cannot download or stream'.format(track.get_track_id()))
+                return track, None
 
-    thread_pool.close()
-    thread_pool.join()
-    if finish_func:
-        finish_func()
+            if track.download_url:
+                url = track.download_url
+            else:
+                resource = self.client.get(track.stream_url, allow_redirects=False)
+                url = resource.location
+            logger.info('download {0} by url {1}'.format(track.id, url))
+            return track, sync_write(requests.get(url))
 
+        future = self.loop.run_in_executor(None, sync_download)
+        if callback:
+            future.add_done_callback(callback)
+        return await future
 
-def __to_tracks(resources):
-    """
-    convert from sound cloud track resource to local store track
-    :param resources:
-    :return:
-    """
-    return [Track(id=resource.id,
-                  title=resource.title,
-                  playback_count=resource.playback_count,
-                  genre=resource.genre,
-                  synced=False,
-                  local_uri=None,
-                  stream_url=resource.stream_url,
-                  download_url=resource.download_url,
-                  ) for resource in resources if hasattr(resource, 'id')]
+    async def downloads(self, tracks, update_func=None, finish_func=None):
+        tasks = [self.download(track, callback=update_func) for track in tracks]
+        results = await asyncio.gather(*tasks)
+        if finish_func:
+            finish_func(results)
+        return results
 
-
-def __extract_stream_url(track):
-    """
-    get downloadable stream url from track
-    :param track:
-    :return: download url
-    """
-    resource = client.get(track.stream_url,
-                          allow_redirects=False)
-    return resource.location
+    @classmethod
+    def __to_tracks(cls, resources):
+        """
+        convert from sound cloud track resource to local store track
+        :param resources:
+        :return:
+        """
+        return [Track(id=resource.id,
+                      title=resource.title,
+                      playback_count=resource.playback_count,
+                      genre=resource.genre,
+                      synced=False,
+                      local_uri=None,
+                      stream_url=resource.stream_url,
+                      download_url=resource.download_url,
+                      downloadable=resource.downloadable,
+                      streamable=resource.streamable,
+                      ) for resource in resources if hasattr(resource, 'id')]
