@@ -3,25 +3,11 @@
 import click
 import cmd
 import logging
-import random
 import asyncio
 from sady.player import MPlayer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-"""
-sample track keywords
-"""
-TRACK_NAMES = [
-    'neu vang anh',
-    'buc tranh tu nuoc mat',
-    'what make you beautyful',
-    'Beautiful Japanese Song',
-    'japanese beautiful piano & violin music',
-    'My Love - Lee Seung Chul',
-    'Casablanca - Bertie Higgins'
-]
 
 
 class PlayerCMD(cmd.Cmd):
@@ -42,14 +28,16 @@ class PlayerCMD(cmd.Cmd):
     def do_play(self, name):
         """search and play track by every thing input(ex: p let's it go)"""
         if not name:
-            name = random.choice(TRACK_NAMES)
-        self.player.search(name, True)
+            self.player.start_playlist()
+        else:
+            self.player.search(name, True)
 
     def do_any(self, name):
         """search and play track by every thing input(ex: p let's it go)"""
         if not name:
-            name = random.choice(TRACK_NAMES)
-        self.player.search(name, True)
+            self.player.start_playlist()
+        else:
+            self.player.search(name, True)
 
     def do_history(self, args):
         """show search history"""

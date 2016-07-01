@@ -1,7 +1,7 @@
 import logging
 
 from sady import config
-from sady.store import TrackList
+from sady.store import TrackList, SearchResult
 from sady.ui import UI
 from sady.gateway import Gateway
 from enum import Enum
@@ -30,31 +30,34 @@ class MPlayer(object):
         self.tracks_list = TrackList(config.PAGE_SIZE,
                                      config.TRACK_DATA_FILE,
                                      config.PLAYLIST_FILE)
-        self.search_result = []
+        self.search_result = SearchResult(config.PAGE_SIZE, [])
         self.action = Action.playlist
 
     def search(self, q, start=False):
         """ search track online by query"""
         self.ui.show_wait("searching..")
         self.action = Action.search
-        result = self.loop.run_until_complete(self.gw.search(query=q))
-        if not result:
+        results = self.loop.run_until_complete(self.gw.search(query=q))
+        if not results:
             self.ui.show_message("not found track with query=%s" % q)
         else:
-            self.search_result = result
-            for result in self.search_result:
+            self.search_result.set(results)
+            for result in self.search_result.tracks:
                 track = self.tracks_list.track_by_id(result.get_track_id())
                 if track:
                     result.update(synced=True, local_uri=track.local_uri)
-        self.ui.show_tracks(self.search_result)
+
+        top_tracks = self.search_result.top_tracks()
+        self.ui.show_tracks(top_tracks)
         if start:
-            self.__select_one(self.search_result, 0)
+            self.__select_one(top_tracks, 0)
 
     def search_history(self):
-        if not self.search_result:
+        self.action = Action.search
+        if not self.search_result.tracks:
             self.ui.show_message("history empty")
         else:
-            self.ui.show_tracks(self.search_result)
+            self.ui.show_tracks(self.search_result.top_tracks())
 
     def play(self, track):
         """ start play a track """
@@ -76,12 +79,16 @@ class MPlayer(object):
             self.ui.show_tracks(top_tracks)
 
     def show_curr_page(self):
-        offset, page = self.tracks_list.curr_page()
-        self.action = Action.playlist
+        if self.action == Action.playlist:
+            source = self.tracks_list
+        else:
+            source = self.search_result
+
+        offset, page = source.curr_page()
 
         if not page:
             offset = 0
-            page = self.tracks_list.top_tracks()
+            page = source.top_tracks()
 
         if not page:
             self.ui.show_message("playlist empty")
@@ -89,8 +96,12 @@ class MPlayer(object):
             self.ui.show_tracks(page, offset)
 
     def show_next_page(self):
-        offset, next_tracks = self.tracks_list.next_page()
-        self.action = Action.playlist
+        if self.action == Action.playlist:
+            source = self.tracks_list
+        else:
+            source = self.search_result
+
+        offset, next_tracks = source.next_page()
 
         if not next_tracks:
             self.ui.show_message("playlist empty")
@@ -98,8 +109,12 @@ class MPlayer(object):
             self.ui.show_tracks(next_tracks, offset)
 
     def show_prev_page(self):
-        offset, prev_tracks = self.tracks_list.prev_page()
-        self.action = Action.playlist
+        if self.action == Action.playlist:
+            source = self.tracks_list
+        else:
+            source = self.search_result
+
+        offset, prev_tracks = source.prev_page()
 
         if not prev_tracks:
             self.ui.show_message("playlist empty")
@@ -120,14 +135,14 @@ class MPlayer(object):
 
     def next(self):
         """show next page using current context"""
-        if self.action == Action.playlist:
+        if self.action in (Action.playlist, Action.search):
             self.show_next_page()
         else:
             pass
 
     def prev(self):
         """show prev page using current context"""
-        if self.action == Action.playlist:
+        if self.action in (Action.playlist, Action.search):
             self.show_prev_page()
         else:
             pass
@@ -143,17 +158,16 @@ class MPlayer(object):
 
         if self.action == Action.playlist:
             offset, page = self.tracks_list.curr_page()
-            self.ui.show_message('index = {0} '.format(index - offset))
-            for t in page:
-                print(t.title)
-            self.__select_one(page, index - offset)
         else:
-            self.__select_one(self.search_result, index)
+            offset, page = self.search_result.curr_page()
+
+        self.ui.show_message('index = {0} '.format(index - offset))
+        self.__select_one(page, index - offset)
 
     def sync(self, indices=None):
         """sync result of search by indices
         """
-        track_list = self.search_result
+        track_list = self.search_result.tracks
         if not track_list:
             self.ui.show_message('empty list')
             return
@@ -175,7 +189,7 @@ class MPlayer(object):
                 track.update(local_uri=local_uri, synced=True)
                 self.ui.show_message("synced [{0}]{1} -> {2}".format(track.id, track.title, local_uri))
 
-        tracks = [self.search_result[i] for i in valid_indices]
+        tracks = [self.search_result.tracks[i] for i in valid_indices]
         self.tracks_list.add_all(track_list, True)
         self.ui.show_message('syncing..')
         self.loop.run_until_complete(self.gw.downloads(tracks, __update_func, None))

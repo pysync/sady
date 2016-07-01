@@ -70,18 +70,47 @@ class Track(object):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 
-class TrackList(object):
+class Pagging(object):
+    def __init__(self, page_size, tracks):
+        self.page_size = page_size
+        self.tracks = tracks
+        self.__ptr = (0, self.page_size)
+
+    def top_tracks(self):
+        self.__ptr = (0, min(self.page_size, len(self.tracks)))
+        return self.tracks[:self.__ptr[1]]
+
+    def curr_page(self):
+        return self.__ptr[0], self.tracks[self.__ptr[0]: self.__ptr[1]]
+
+    def next_page(self):
+        self.__ptr = (self.__ptr[1], min(self.__ptr[1] + self.page_size, len(self.tracks)))
+        return self.__ptr[0], self.tracks[self.__ptr[0]: self.__ptr[1]]
+
+    def prev_page(self):
+        self.__ptr = (max(0, self.__ptr[0] - self.page_size), self.__ptr[0])
+        return self.__ptr[0], self.tracks[self.__ptr[0]: self.__ptr[1]]
+
+
+class SearchResult(Pagging):
+    def __init__(self, page_size, result):
+        super().__init__(page_size, result)
+
+    def set(self, tracks):
+        self.tracks = tracks
+        self.__ptr = (0, self.page_size)
+
+
+class TrackList(Pagging):
     def __init__(self, page_size, data_uri, playlist_uri):
         """
         load list of track from local file by data_url
         :param data_uri: path to data file (use jsonpickle format)
         :param playlist_uri: path to playlist file(raw text format)
         """
-        self.page_size = page_size
+        super().__init__(page_size, [])
         self.data_uri = data_uri
         self.playlist_uri = playlist_uri
-        self.tracks = []
-        self.__ptr = (0, self.page_size)
         self.__load_from_disk()
 
     def __load_from_disk(self):
@@ -170,21 +199,6 @@ class TrackList(object):
     def flush(self):
         self.__save_to_disk()
         self.__write_to_playlist_file()
-
-    def top_tracks(self):
-        self.__ptr = (0, min(self.page_size, len(self.tracks)))
-        return self.tracks[:self.__ptr[1]]
-
-    def curr_page(self):
-        return self.__ptr[0], self.tracks[self.__ptr[0]: self.__ptr[1]]
-
-    def next_page(self):
-        self.__ptr = (self.__ptr[1], min(self.__ptr[1] + self.page_size, len(self.tracks)))
-        return self.__ptr[0], self.tracks[self.__ptr[0]: self.__ptr[1]]
-
-    def prev_page(self):
-        self.__ptr = (max(0, self.__ptr[0] - self.page_size), self.__ptr[0])
-        return self.__ptr[0], self.tracks[self.__ptr[0]: self.__ptr[1]]
 
     def clean(self):
         try:

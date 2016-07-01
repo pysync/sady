@@ -31,7 +31,7 @@ for file_path in (LOG_FILE,
             os.utime(file_path, None)
 
 """ search result limit """
-SEARCH_RESULT_LIMIT = 20
+SEARCH_RESULT_LIMIT = 40
 
 """ track page size """
 PAGE_SIZE = 20
