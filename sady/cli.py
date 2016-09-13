@@ -9,13 +9,15 @@ from sady.player import MPlayer
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+__version__ = "1.0.1"
+
 
 class PlayerCMD(cmd.Cmd):
     """
     Simple Player
     """
     prompt = 'mbox>'
-    intro = '{0}{1}{2}'.format('-' * 5, 'Relax', '-' * 5)
+    intro = '{0}{1}{2}{3}'.format('-' * 5, 'Relax', __version__, '-' * 5)
 
     def __init__(self, loop):
         cmd.Cmd.__init__(self)
@@ -92,6 +94,18 @@ class PlayerCMD(cmd.Cmd):
             indices = [indices]
 
         self.player.sync(indices)
+
+    def do_version(self, *args):
+        print(__version__)
+
+    def do_exit(self, *args):
+        """exit app"""
+        try:
+            self.player.loop.stop()
+        except Exception as e:
+            pass
+
+        return True
 
 
 @click.command()
