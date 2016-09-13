@@ -95,6 +95,23 @@ class PlayerCMD(cmd.Cmd):
 
         self.player.sync(indices)
 
+    def default(self, line):
+        if line:
+            args = line.split()
+            cmd, args = args[0], args[1:]
+            if cmd in ('l', 'll'):
+                self.do_list(args)
+            elif cmd in ('n',):
+                self.do_next(args)
+            elif cmd in ('b', 'back'):
+                self.do_prev(args)
+            elif cmd in ('p', 'r', 'run'):
+                self.do_select(args)
+            elif cmd in ('s', 'search', 'regex',):
+                self.do_search(args)
+            else:
+                self.do_any(args)
+
     def do_version(self, *args):
         print(__version__)
 
