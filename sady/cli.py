@@ -101,7 +101,7 @@ class PlayerCMD(cmd.Cmd):
               help='track keywords')
 def start(query):
     if len(query):
-        cmd = 'p {0}'.format(' '.join(query))
+        cmd = 'play {0}'.format(' '.join(query))
         event_loop = asyncio.get_event_loop()
         player = PlayerCMD(event_loop)
         player.onecmd(cmd)
