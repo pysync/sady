@@ -3,7 +3,6 @@ env/
 *.egg-info
 .eggs
 build
-dist
 *.pyc
 .idea
 .out
