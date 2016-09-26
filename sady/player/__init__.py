@@ -9,7 +9,7 @@ import subprocess
 
 logger = logging.getLogger(__name__)
 
-logger.info('-- app starting...')
+logger.debug('-- app starting...')
 
 
 class Action(Enum):

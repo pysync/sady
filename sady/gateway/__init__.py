@@ -65,7 +65,7 @@ class Gateway(object):
             else:
                 resource = self.client.get(track.stream_url, allow_redirects=False)
                 url = resource.location
-            logger.info('download {0} by url {1}'.format(track.id, url))
+            logger.debug('download {0} by url {1}'.format(track.id, url))
             return track, sync_write(requests.get(url))
 
         future = self.loop.run_in_executor(None, sync_download)
