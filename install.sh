@@ -40,7 +40,8 @@ git clone git@github.com:dungntnew/sady.git $SADY_HOME_DIR
 cd $SADY_HOME_DIR
 virtualenv -p python3 ./env && source ./env/bin/activate
 pip install -r requirements.txt
-echo "export SADY_HOME_DIR=$SADY_HOME_DIR && alias sady='cd $SADY_HOME_DIR && ./env/bin/python4 __init__.py'" >> ~/.bash_profile
+echo "export SADY_HOME_DIR=$SADY_HOME_DIR" >> ~/.bash_profile
+echo "alias sady='cd $SADY_HOME_DIR && ./env/bin/python3 ./__init__.py'" >> ~/.bash_profile
 source ~/.bash_profile
 echo "[successfully installed sady to $SADY_HOME_DIR"
 
@@ -48,7 +49,7 @@ echo "=========================================================="
 echo "                              "
 echo "      INSTALL SADY - END -         "
 echo "----------------------------------------------------------"
-echo "run: $ sady -q \"track name\" -> to enjoy (๑˃̵ᴗ˂̵) "
+echo "run: $ sady -q \"Lets it go Idina Menzel\" -> to enjoy (๑˃̵ᴗ˂̵) "
 
 
 
