@@ -59,6 +59,29 @@ $ sady -q "Lets it go Idina Menzel"
 ```
 
 
+### Usage
+
+cmd mod
+
+| command        | description      
+| ------------- |:-------------:|
+| any | search and play any track by name, keywords, etc.. |
+| exit | to quit sady |
+| search      | search track by name, keywords, singer, etc..  |
+| select      | select one track index to play (auto sync)       |
+| sync | sync track to play in local with track index (no param -> all)      |
+| list | list all tracks in playlist (alias: ll, top)|
+| next | next tracks page |
+| prev | prev tracks page |
+
+playing mod:
+
+( ref: player --help  or man player to see help)
+
+| command        | description      
+| ------------- |:-------------:|
+| q | to quit mplayer - back to sady cmd |
+| space | to pause - replay track |
 
 
 
