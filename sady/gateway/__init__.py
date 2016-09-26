@@ -7,6 +7,8 @@ from sady.store import Track
 from sady import config
 import asyncio
 
+logging.getLogger("requests").setLevel(logging.WARNING)
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
