@@ -7,10 +7,16 @@
 
 ### Quick Install 
 
-(This script use for Macosx only. For ubuntu or other linux users please use manual install.)
+
 ```
 $ curl "https://raw.githubusercontent.com/dungntnew/sady/master/install.sh?v=1.0" | sh 
 ```
+
+This script use for Macosx only. For ubuntu or other linux users please use manual install.
+current issues: zsh: command not found: just after installed in current termial session
+=> open other termial tab to reload ~/.bash_profile  or: source ~/.bash_profile to take effect.
+
+
 
 ### Dependences
 - python >= 3.3 (asyncio requires Python 3.3 or later)
