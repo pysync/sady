@@ -2,3 +2,5 @@ six
 soundcloud
 click
 tabulate
+jsonpickle
+asyncio
