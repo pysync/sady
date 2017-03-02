@@ -32,6 +32,9 @@ if [ ! -x "$(command -v python3)" ]; then
   brew install python3
   echo "[successfully installed] python3"
   which python3
+  echo "[start install virtualenv]"
+  sudo pip3 install virtualenv
+  echo "[successfully installed virtualenv]"
 fi
 
 # Clone & Install sady
