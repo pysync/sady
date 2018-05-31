@@ -1,5 +1,5 @@
 
-![Preview](https://raw.githubusercontent.com/dungntnew/sady/master/screen-v2.png"Usage..")
+![Preview](https://raw.githubusercontent.com/dungntnew/sady/master/screen-v2.png "Usage..")
 
 ```bash
 >> sady track -> to enjoy (๑˃̵ᴗ˂̵) 
